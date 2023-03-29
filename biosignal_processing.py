@@ -6,16 +6,16 @@ Created on Sat Feb 25 10:53:04 2023
 """
 
 # =============================================================================
-# GET DATA- dF/F and GG are z-scored but not EEG delta. Because that would result in -20 baseline
+# GET DATA BLOCK- get EEG, muscle (GG= genioglossus muscle example) and fiber photometry signals
 # =============================================================================
 
 
 def get_EEG(filename):
-    EEG=pd.read_csv(filename,header=None)
-    EEG=EEG.to_numpy()
-    EEG=EEG[~np.isnan(EEG)]
+    EEG=pd.read_csv(filename,header=None)       #Pandas Dataframe
+    EEG=EEG.to_numpy()                          # numpy Array
+    EEG=EEG[~np.isnan(EEG)]                     # removes empty rows/cols
     
-    sg.theme('DarkBlue') #Adding theme
+    sg.theme('DarkBlue') #Adding theme          # GUI for user input- raw or z-scored
     layout=[
         [sg.Text('Choose an option for EEG data processing type')],
         [sg.Button('z-score'),sg.Button('raw')]
@@ -62,7 +62,7 @@ def get_GG(filename):
     return 
     
     
-def get_gCAMP_dF_F(gGAMP_filename, UV_filename): 
+def get_gCAMP_dF_F(gGAMP_filename, UV_filename):        # Pandas df for gCAMP and UV files
     gCAMP=pd.read_csv(gGAMP_filename,header=None)
     gCAMP=gCAMP.to_numpy()
     gCAMP=gCAMP[~np.isnan(gCAMP)]
@@ -85,7 +85,8 @@ def get_gCAMP_dF_F(gGAMP_filename, UV_filename):
     event,z =window5.read()
     window5.close()
     
-    if event=='Highpass':
+    if event=='Highpass':                               # Filter math adapted from Akam, T., & Walton, M. E. (2019). pyPhotometry: Open source Python based hardware and software for fiber photometry data acquisition. Scientific Reports, 9, 3521. 
+                                                        # https://doi.org/10.1038/s41598-019-39724-y
         gCAMP_denoised = medfilt(gCAMP, kernel_size=5)
         UV_denoised = medfilt(UV, kernel_size=5)
         b,a = butter(2, 10, btype='low', fs=sampling_rate)
@@ -266,12 +267,13 @@ if __name__ == '__main__':
     from scipy.optimize import curve_fit
     import PySimpleGUI as sg
     
-    ## GUI for user input # of epochs
-    sg.theme('DarkBlue') #Adding theme
+    
+    sg.theme('DarkBlue')                                        ## GUI for user input- # of epochs, sample rate
     layout=[
         [sg.Text('Enter # of epochs in case')],
         [sg.Text('case #',size=(9,1)),sg.InputText()],
         [sg.Text('# of epochs',size=(9,1)),sg.InputText()],
+        [sg.Text('sample rate',size=(9,1)),sg.InputText()],
         [sg.Submit(),sg.Cancel()]
     ] 
     window1=sg.Window('Input data',layout)
@@ -279,14 +281,15 @@ if __name__ == '__main__':
     window1.close()
     case=int(n[0])
     n=int(n[1])
+    sr=int(n[2])
     
     
     
-    ## GUI for user input Spike8 timestamps
-    sg.theme('DarkBlue') #Adding theme
+    #
+    sg.theme('DarkBlue') 
         
     layout=[
-        [sg.Text('Enter epoch times and offset (in seconds)')],
+        [sg.Text('Enter epoch times and offset (in seconds)')],   # GUI for user input Spike8 timestamps ( in seconds)
         [sg.Text('Epoch 1',size=(7,1)),sg.InputText()],
         [sg.Text('Epoch 2',size=(7,1)),sg.InputText()],
         [sg.Text('Epoch 3',size=(7,1)),sg.InputText()],
@@ -313,7 +316,7 @@ if __name__ == '__main__':
     window2=sg.Window('Input data',layout)
     event,x =window2.read()
     window2.close()
-    #print(event, x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11],x[12])
+    
     t1=int(x[15])
     t2=int(x[16])
     offset=float(x[17])
@@ -322,10 +325,10 @@ if __name__ == '__main__':
     for i in range(0,n):
             epoch_i = float(x[i])
             epochs.append(epoch_i)
-            #print(epochs)
+            
     timestamps=[]
     for i in range(0,n):
-            timestamp_i=((epochs[i]-offset)*500)  
+            timestamp_i=((epochs[i]-offset)*sr)  
             timestamp_i=int(timestamp_i)
             timestamps.append(timestamp_i)
         
@@ -337,13 +340,13 @@ if __name__ == '__main__':
     zdF_F,dF_F,gCAMP,UV =get_gCAMP_dF_F('gCAMP.txt','UV.txt')
     
     indexes=np.arange(1,len(EEG)+1)
-    time=indexes/500
+    time=indexes/sr
 # =============================================================================
             
     # RUN BLOCK-----FUNCTIONS    
         
     one_epoch()
-    #heat_map()
+    heat_map()
     save_data()
    
             
