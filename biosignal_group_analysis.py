@@ -4,7 +4,7 @@ Created on Sat Jan 14 14:02:31 2023
 
 @author: Fractal
 """
-def line_plot(): # all epochs combined and averaged so variance might be high. Alternate scenario would be to combine 1-5, 6-10 and 11-15 to form 3 lines and average those
+def line_plot(): # all epochs combined and averaged so variance might be high. Alternate scenario would be to combine n epochs per case to form 3 cases(3 lines) and average those
         
         l1=list(range(0,len(EEG_mean)))
         fig=plt.figure(figsize=(14,8),dpi=600)
@@ -16,7 +16,7 @@ def line_plot(): # all epochs combined and averaged so variance might be high. A
         plt.fill_between(l1, EEG_mean-EEG_SD,EEG_mean+EEG_SD,color='lightcoral',alpha=0.5)
         plt.axvline(x=(t1*len(EEG_mean))/(t1+t2),color='k',linestyle='dashed')
         py.xlim(0,len(EEG_mean)) 
-        plt.xticks([0,500*t1,500*(t1+t2)],[-t1,0,t2])
+        plt.xticks([0,sr*t1,sr*(t1+t2)],[-t1,0,t2])
         plt.legend(loc=1)
         
         l2=list(range(0,len(GG_mean)))
@@ -28,7 +28,7 @@ def line_plot(): # all epochs combined and averaged so variance might be high. A
         py.ylabel('Volts')
         plt.axvline(x=(t1*len(GG_mean))/(t1+t2),color='k',linestyle='dashed')
         py.xlim(0,len(GG_mean))
-        plt.xticks([0,500*t1,500*(t1+t2)],[-t1,0,t2])
+        plt.xticks([0,sr*t1,sr*(t1+t2)],[-t1,0,t2])
         plt.legend(loc=1)
         
         
@@ -41,7 +41,7 @@ def line_plot(): # all epochs combined and averaged so variance might be high. A
         plt.axvline(x=(t1*len(zdF_F_mean))/(t1+t2),color='k',linestyle='dashed')
         py.xlim(0,len(zdF_F_mean))
         plt.legend(loc=1)
-        plt.xticks([0,500*t1,500*(t1+t2)],[-t1,0,t2])
+        plt.xticks([0,sr*t1,sr*(t1+t2)],[-t1,0,t2])
         py.xlabel('Time(sec)')
         
         fig.savefig('line_plot.svg')
@@ -55,7 +55,7 @@ def heat_map():
     py.xlabel('Time (seconds)')
     plt.axvline(x=(t1*len(GG_mean))/(t1+t2),color='k',linestyle='dashed')
     py.xlim(0,len(GG_mean))
-    plt.xticks([0,500*t1,500*(t1+t2)],[-t1,0,t2], rotation=0)
+    plt.xticks([0,sr*t1,sr*(t1+t2)],[-t1,0,t2], rotation=0)
     fig.savefig('GG_heatmap.svg')
     
     fig=plt.figure(figsize=(14, 8), dpi=600)
@@ -64,12 +64,12 @@ def heat_map():
     py.xlabel('Time (seconds)')
     plt.axvline(x=(t1*len(zdF_F_mean))/(t1+t2),color='k',linestyle='dashed')
     py.xlim(0,len(zdF_F_mean))
-    plt.xticks([0,500*t1,500*(t1+t2)],[-t1,0,t2], rotation=0)
+    plt.xticks([0,sr*t1,sr*(t1+t2)],[-t1,0,t2], rotation=0)
     fig.savefig('zdF_F_heatmap.svg')
     
     return
 
-def bar_graph():
+def bar_graph():                        #barplot: bars, plot: lines connecting pre and post, stripplot: dots connecting lines
     
     if event1=='Amp': 
    
@@ -81,8 +81,6 @@ def bar_graph():
         clrs=['lightcoral','lightcoral']
         ax=sns.barplot(data=[EEG_pre_mean_series,EEG_post_mean_series], capsize=0.2,errwidth=2,errcolor='black',palette=clrs, edgecolor='black', linewidth=2,saturation=1)# by default, the estimator will be the mean
         ax=sns.stripplot(data=[EEG_pre_mean_series,EEG_post_mean_series],color='#555454', size=4,jitter=0.05)
-        #py.ylim((0,0.1))
-        #plt.plot([a1s,b1s],color='black')
         ax.set(ylabel='Power (normalized)')
         ax.set(xlabel='Quiet wake        Active wake')
         ax.set(xticklabels=[])
@@ -95,12 +93,10 @@ def bar_graph():
     
         plt.subplot(1,3,2)
         plt.subplots_adjust(wspace=0.5)
-        #py.ylim(-1,4)
         sns.set_context('paper',font_scale=2)# to set themes and font sizes, Types are paper, talk and poster
         clrs=['lightcoral','lightcoral']
         ax=sns.barplot(data=[GG_pre_mean_series,GG_post_mean_series], capsize=0.2,errwidth=2,errcolor='black',palette=clrs, edgecolor='black', linewidth=2,saturation=1)# by default, the estimator will be the mean
         ax=sns.stripplot(data=[GG_pre_mean_series,GG_post_mean_series],color='#555454',size=4,jitter=0.05)
-        #plt.plot([a2s,b2s],color='black')
         ax.set(ylabel='Amplitude(Volts)')
         ax.set(xlabel='Quiet wake        Active wake')
         ax.set(xticklabels=[])
@@ -117,7 +113,6 @@ def bar_graph():
         clrs=['lightcoral','lightcoral']
         ax=sns.barplot(data=[zdF_F_pre_mean_series,zdF_F_post_mean_series], capsize=0.2,palette=clrs,errwidth=2,errcolor='black', edgecolor='black', linewidth=2,saturation=1)# by default, the estimator will be the mean
         ax=sns.stripplot(data=[zdF_F_pre_mean_series,zdF_F_post_mean_series],color='#555454',size=4,jitter=0.05)
-        #plt.plot([a3s,b3s],color='black')
         ax.set(ylabel='z-score')
         ax.set(xlabel='Quiet wake        Active wake')
         ax.set(xticklabels=[])
@@ -140,8 +135,6 @@ def bar_graph():
         clrs=['lightcoral','lightcoral']
         ax=sns.barplot(data=[EEG_pre_mean_series,EEG_post_mean_series], capsize=0.2,errwidth=2,errcolor='black',palette=clrs, edgecolor='black', linewidth=2,saturation=1)# by default, the estimator will be the mean
         ax=sns.stripplot(data=[EEG_pre_mean_series,EEG_post_mean_series],color='#555454', size=4,jitter=0.05)
-        #py.ylim((0,0.1))
-        #plt.plot([a1s,b1s],color='black')
         ax.set(ylabel='Power (normalized)')
         ax.set(xlabel='Quiet wake        Active wake')
         ax.set(xticklabels=[])
@@ -154,12 +147,10 @@ def bar_graph():
     
         plt.subplot(1,3,2)
         plt.subplots_adjust(wspace=0.5)
-        #py.ylim(0,1)
         sns.set_context('paper',font_scale=2)# to set themes and font sizes, Types are paper, talk and poster
         clrs=['lightcoral','lightcoral']
         ax=sns.barplot(data=[AUC_GG_pre_series,AUC_GG_post_series], capsize=0.2,errwidth=2,errcolor='black',palette=clrs, edgecolor='black', linewidth=2,saturation=1)# by default, the estimator will be the mean
         ax=sns.stripplot(data=[AUC_GG_pre_series,AUC_GG_post_series],color='#555454',size=4,jitter=0.05)
-        #plt.plot([a2s,b2s],color='black')
         ax.set(ylabel='AUC(amp* time in sec)')
         ax.set(xlabel='Quiet wake        Active wake')
         ax.set(xticklabels=[])
@@ -176,7 +167,6 @@ def bar_graph():
         clrs=['lightcoral','lightcoral']
         ax=sns.barplot(data=[zdF_F_pre_mean_series,zdF_F_post_mean_series], capsize=0.2,palette=clrs,errwidth=2,errcolor='black', edgecolor='black', linewidth=2,saturation=1)# by default, the estimator will be the mean
         ax=sns.stripplot(data=[zdF_F_pre_mean_series,zdF_F_post_mean_series],color='#555454',size=4,jitter=0.05)
-        #plt.plot([a3s,b3s],color='black')
         ax.set(ylabel='z-score')
         ax.set(xlabel='Quiet wake        Active wake')
         ax.set(xticklabels=[])
@@ -222,8 +212,8 @@ if __name__ == '__main__':
     from numpy import trapz
     
     
-    ## GUI for user input # of epochs
-    sg.theme('DarkBlue') #Adding theme
+                                                ## GUI for user input. Different pre and post times can be used for heat maps/line graphs and bar graphs
+    sg.theme('DarkBlue')                        #Adding theme
     layout=[
         [sg.Text('Group details')],
         [sg.Text('# of epochs per case',size=(15,1)),sg.InputText()],
@@ -232,6 +222,7 @@ if __name__ == '__main__':
         [sg.Text('t2(post)-line graph & heat map',size=(25,1)),sg.InputText()],
         [sg.Text('t1(pre)- bar graph',size=(20,1)),sg.InputText()],
         [sg.Text('t2(post)-bar graph',size=(20,1)),sg.InputText()],
+        [sg.Text('sample rate',size=(20,1)),sg.InputText()],
         [sg.Submit(),sg.Cancel()]
     ] 
     window=sg.Window('Input data',layout)
@@ -243,10 +234,11 @@ if __name__ == '__main__':
     t2=int(x[3])
     t1bar=int(x[4])
     t2bar=int(x[5])
+    sr=int(x[6])
     
     sg.theme('DarkBlue') #Adding theme
     layout=[
-        [sg.Text('Choose an option for GG data processing type')],
+        [sg.Text('Choose an option for GG data processing type')],    # USer can choose if the muscle output for the bar graph be in amplitude or area-under-curve
         [sg.Button('Amp'),sg.Button('AUC')]
     ] 
     window1=sg.Window('Input data',layout)
@@ -268,8 +260,8 @@ if __name__ == '__main__':
             z=z+1
             EEG=pd.read_csv('EEG_c{0}_{1}.csv'.format(case,i+1),header=None)
             EEG=EEG.rename(columns={0:'epoch {}'.format(z)})
-            EEGpre=EEG[(t1-t1bar)*500:(t1*500)]
-            EEGpost=EEG[(t1*500):(t1+t2bar)*500]
+            EEGpre=EEG[(t1-t1bar)*sr:(t1*sr)]
+            EEGpost=EEG[(t1*sr):(t1+t2bar)*sr]
             EEGpremean=np.mean(EEGpre,axis=0)
             EEGpostmean=np.mean(EEGpost,axis=0)
             
@@ -304,9 +296,9 @@ if __name__ == '__main__':
             z=z+1
             GG=pd.read_csv('GG_c{0}_{1}.csv'.format(case,i+1),header=None)
             GG=GG.rename(columns={0:'epoch {}'.format(z)})
-            GGpre=GG[(t1-t1bar)*500:(t1*500)]
+            GGpre=GG[(t1-t1bar)*sr:(t1*sr)]
             GGprenumpy=np.array(GGpre)
-            GGpost=GG[(t1*500):(t1+t2bar)*500]
+            GGpost=GG[(t1*sr):(t1+t2bar)*sr]
             GGpostnumpy=np.array(GGpost)
             GGpremean=np.mean(GGpre,axis=0)
             GGpostmean=np.mean(GGpost,axis=0)
@@ -316,8 +308,8 @@ if __name__ == '__main__':
             # Compute the AUC using the composite trapezoidal rule.
             AUCGGpre = np.trapz(GGprenumpy, dx=len(GGprenumpy),axis=0)
             AUCGGpost = np.trapz(GGpostnumpy, dx=len(GGpostnumpy),axis=0)
-            AUCGGpre=AUCGGpre/(len(GGprenumpy)*500)
-            AUCGGpost=AUCGGpost/(len(GGpostnumpy)*500)
+            AUCGGpre=AUCGGpre/(len(GGprenumpy)*sr)
+            AUCGGpost=AUCGGpost/(len(GGpostnumpy)*sr)
             ########################################################
             
             GG_full.append(GG)
@@ -357,8 +349,8 @@ if __name__ == '__main__':
             z=z+1
             zdF_F=pd.read_csv('zdF_F_c{0}_{1}.csv'.format(case,i+1),header=None)
             zdF_F=zdF_F.rename(columns={0:'epoch {}'.format(z)})
-            zdF_Fpre=zdF_F[(t1-t1bar)*500:(t1*500)]
-            zdF_Fpost=zdF_F[(t1*500):(t1+t2bar)*500]
+            zdF_Fpre=zdF_F[(t1-t1bar)*sr:(t1*sr)]
+            zdF_Fpost=zdF_F[(t1*sr):(t1+t2bar)*sr]
             zdF_Fpremean=np.mean(zdF_Fpre,axis=0)
             zdF_Fpostmean=np.mean(zdF_Fpost,axis=0)
             
