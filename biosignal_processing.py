@@ -82,7 +82,7 @@ def get_gCAMP_dF_F(gGAMP_filename, UV_filename):        # Pandas df for gCAMP an
     sg.theme('DarkBlue') #Adding theme
     layout=[
         [sg.Text('Choose an fit method for FP data processing type')],
-        [sg.Button('Highpass'),sg.Button('Polyfit'),sg.Button('Expfit')]
+        [sg.Button('Highpass'),sg.Button('Polyfit'),sg.Button('Expfit: 2 order single'),sg.Button('Expfit: double') ]
     ] 
     window5=sg.Window('Data Type Input',layout)
     event,z =window5.read()
@@ -101,12 +101,13 @@ def get_gCAMP_dF_F(gGAMP_filename, UV_filename):        # Pandas df for gCAMP an
         slope, intercept, r_value, p_value, std_err = linregress(x=UV_highpass, y=gCAMP_highpass)
         gCAMP_est_motion = intercept + slope * UV_highpass
         gCAMP_corrected = gCAMP_highpass - gCAMP_est_motion
-        f,e = butter(2, 0.001, btype='low', fs=sr)
-        baseline_fluorescence = filtfilt(f,e, gCAMP_denoised, padtype='even')
-        gCAMP_dF_F = gCAMP_corrected/baseline_fluorescence
+        #f,e = butter(2, 0.001, btype='low', fs=sr)
+        #baseline_fluorescence = filtfilt(f,e, gCAMP_denoised, padtype='even')
+        gCAMP_dF_F = gCAMP_corrected/gCAMP_highpass      # old version: replace gCAMP_highpass with baseline_fluorescence
         numerator = np.subtract(gCAMP_dF_F, np.nanmean(gCAMP_dF_F))
         zscore = np.divide(numerator, np.nanstd(gCAMP_dF_F))
         return zscore,gCAMP_dF_F,gCAMP_highpass,UV_highpass
+    
     elif event=='Polyfit':
         gCAMP_denoised = medfilt(gCAMP, kernel_size=5)
         UV_denoised = medfilt(UV, kernel_size=5)
@@ -122,13 +123,14 @@ def get_gCAMP_dF_F(gGAMP_filename, UV_filename):        # Pandas df for gCAMP an
         slope, intercept, r_value, p_value, std_err = linregress(x=UV_ps, y=gCAMP_ps)
         gCAMP_est_motion = intercept + slope * UV_ps
         gCAMP_corrected = gCAMP_ps - gCAMP_est_motion
-        d,c = butter(2, 0.001, btype='low', fs=sr)
-        baseline_fluorescence = filtfilt(d,c, gCAMP_denoised, padtype='even')
-        gCAMP_dF_F = gCAMP_corrected/baseline_fluorescence
+        #d,c = butter(2, 0.001, btype='low', fs=sr)
+        #baseline_fluorescence = filtfilt(d,c, gCAMP_denoised, padtype='even')
+        gCAMP_dF_F = gCAMP_corrected/gCAMP_polyfit          # old version: replace gCAMP_polyfit with baseline_fluorescence
         numerator = np.subtract(gCAMP_dF_F, np.nanmean(gCAMP_dF_F))
         zscore = np.divide(numerator, np.nanstd(gCAMP_dF_F))
         return zscore,gCAMP_dF_F,gCAMP_ps,UV_ps
-    elif event=='Expfit':
+    
+    elif event=='Expfit: 2 order single':
         gCAMP_denoised = medfilt(gCAMP, kernel_size=5)
         UV_denoised = medfilt(UV, kernel_size=5)
         b,a = butter(2, 10, btype='low', fs=sr)
@@ -151,12 +153,59 @@ def get_gCAMP_dF_F(gGAMP_filename, UV_filename):        # Pandas df for gCAMP an
         slope, intercept, r_value, p_value, std_err = linregress(x=UV_es, y=gCAMP_es)
         gCAMP_est_motion = intercept + slope * UV_es
         gCAMP_corrected = gCAMP_es - gCAMP_est_motion
-        d,c = butter(2, 0.001, btype='low', fs=sampling_rate)
-        baseline_fluorescence = filtfilt(d,c, gCAMP_denoised, padtype='even')
-        gCAMP_dF_F = gCAMP_corrected/baseline_fluorescence
+        #d,c = butter(2, 0.001, btype='low', fs=sampling_rate)
+        #baseline_fluorescence = filtfilt(d,c, gCAMP_denoised, padtype='even')
+        gCAMP_dF_F = gCAMP_corrected/gCAMP_expfit # old version: replace gCAMP_expfit with baseline_fluorescence
         numerator = np.subtract(gCAMP_dF_F, np.nanmean(gCAMP_dF_F))
         zscore = np.divide(numerator, np.nanstd(gCAMP_dF_F))
         return zscore,gCAMP_dF_F,gCAMP_es,UV_es
+    
+    elif event=='Expfit: double':
+         gCAMP_denoised = medfilt(gCAMP, kernel_size=5)
+        UV_denoised = medfilt(UV, kernel_size=5)
+        b,a = butter(2, 10, btype='low', fs=sampling_rate)
+        gCAMP_denoised = filtfilt(b,a, gCAMP_denoised)
+        UV_denoised = filtfilt(b,a, UV_denoised)
+        
+        # The double exponential curve we are going to fit.
+        def double_exp_func(t, const, amp_fast, amp_slow, tau_slow, tau_multiplier):
+            tau_fast = tau_slow*tau_multiplier
+            return const+amp_slow*np.exp(-t/tau_slow)+amp_fast*np.exp(-t/tau_fast)
+    
+        # Fit curve to gCAMP and UV signal.
+        
+        max_sig=np.max(gCAMP_denoised)
+        inital_params = [max_sig/2, max_sig/4, max_sig/4, 3600, 0.1]
+        bounds = ([0      , 0      , 0      , 600  , 0],
+                  [max_sig, max_sig, max_sig, 36000, 1])
+        
+        gCAMP_params, param_cov = curve_fit(double_exp_func, time, gCAMP_denoised, 
+                                  p0=inital_params, bounds=bounds, maxfev=1000)
+        gCAMP_expfit = double_exp_func(time, *gCAMP_params)
+        
+        max_sig=np.max(UV_denoised)
+        inital_params = [max_sig/2, max_sig/4, max_sig/4, 3600, 0.1]
+        bounds = ([0      , 0      , 0      , 600  , 0],
+                  [max_sig, max_sig, max_sig, 36000, 1])
+        
+        UV_params, param_cov = curve_fit(double_exp_func, time, UV_denoised, 
+                                  p0=inital_params, bounds=bounds, maxfev=1000)
+        UV_expfit = double_exp_func(time, *UV_params)
+        
+        # Subtract fit line from signal
+        gCAMP_es = gCAMP_denoised - gCAMP_expfit
+        UV_es = UV_denoised - UV_expfit
+        # Motion correction
+        slope, intercept, r_value, p_value, std_err = linregress(x=UV_es, y=gCAMP_es)
+        gCAMP_est_motion = intercept + slope * UV_es
+        gCAMP_corrected = gCAMP_es - gCAMP_est_motion
+        #d,c = butter(2, 0.001, btype='low', fs=sampling_rate)
+        #baseline_fluorescence = filtfilt(d,c, gCAMP_denoised, padtype='even')
+        gCAMP_dF_F = gCAMP_corrected/gCAMP_expfit
+        numerator = np.subtract(gCAMP_dF_F, np.nanmean(gCAMP_dF_F))
+        zscore = np.divide(numerator, np.nanstd(gCAMP_dF_F))
+        return zscore,gCAMP_dF_F,gCAMP_es,UV_es
+    
     return
             
 def one_epoch():                                # Line graphs containing all signals looped through for all user provided epochs. 
